@@ -10,4 +10,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	api.POST("/signup", controllers.SignUp)
 	api.POST("/login", controllers.Login)
+	api.POST("/rooms", controllers.CreateRoom)
+	api.GET("/rooms", controllers.GetRooms)
+
 }

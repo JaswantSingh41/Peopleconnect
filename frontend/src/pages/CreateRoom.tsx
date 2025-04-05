@@ -14,7 +14,13 @@ function CreateRoom() {
     const [error, setError] = useState('')
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value })
+        const { name, value } = e.target
+
+        // setForm({ ...form, [e.target.name]: e.target.value })
+        setForm({
+            ...form,
+            [name]: name === 'maxParticipants' ? parseInt(value, 10) : value,
+          })
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -23,6 +29,8 @@ function CreateRoom() {
     
         try {
           const token = localStorage.getItem('token')
+          console.log('Sending:', form)
+
           const res = await API.post('/rooms', form, {
             headers: {
               Authorization: `Bearer ${token}`,

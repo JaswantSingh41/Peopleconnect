@@ -41,3 +41,15 @@ func GetRooms(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, rooms)
 }
+
+func GetRoomByID(c *gin.Context) {
+	id := c.Param("id")
+	var room models.Room
+
+	if err := database.DB.First(&room, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Room not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, room)
+}

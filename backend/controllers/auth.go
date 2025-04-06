@@ -7,6 +7,7 @@ import (
 
 	"github.com/JaswantSingh41/Peopleconnect/database"
 	"github.com/JaswantSingh41/Peopleconnect/models"
+	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -24,6 +25,7 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
+	user.ID = uuid.New().String()
 	// hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 10)
 	if err != nil {
@@ -85,7 +87,7 @@ func Login(c *gin.Context) {
 		"exp":   time.Now().Add(time.Hour * 10).Unix(),
 	})
 
-	tokenString, err := token.SignedString(jwtSecret)
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token generation failed"})
 		return

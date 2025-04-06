@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/JaswantSingh41/Peopleconnect/controllers"
+	"github.com/JaswantSingh41/Peopleconnect/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,4 +14,7 @@ func RegisterRoutes(r *gin.Engine) {
 	api.POST("/rooms", controllers.CreateRoom)
 	api.GET("/rooms", controllers.GetRooms)
 
+	protected := api.Group("/")
+	protected.Use(middleware.AuthMiddleware())
+	protected.GET("/room/:id", controllers.GetRoomByID)
 }

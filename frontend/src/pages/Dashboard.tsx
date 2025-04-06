@@ -39,7 +39,7 @@ function Dashboard() {
                             </Link>
                         </>
                     ) : (
-                        <Link to="/create-room">
+                        <Link to="/createroom">
                             <button className="bg-green-500 text-white px-4 py-2 rounded">+ Create Room</button>
                         </Link>
                     )}

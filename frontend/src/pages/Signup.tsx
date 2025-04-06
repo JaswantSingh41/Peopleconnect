@@ -1,20 +1,29 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../services/api";
 
 
 function Signup() {
   const navigate = useNavigate();
   const [form ,setform] = useState({ email: '', password: ''});
+  const [error, setError] = useState('')
 
   const handleChange = (e : React.ChangeEvent<HTMLInputElement>) => {
     setform({ ...form, [e.target.name]: e.target.value});
   }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
 
-  const handleSubmit = (e : React.FormEvent) => {
-    e.preventDefault();
-    console.log(form)
-    navigate('/')
-  }
+    try {
+         await API.post('/signup', form)
+        navigate('/login')
+    } catch (err: any) {
+        console.log(error)
+        setError(err.response?.data?.error || 'Signup Failed')
+    }
+}
+
   return (
     <div className="flex flex-col items-center justify-center h-screen">
     <h2 className="text-2xl mb-4">Signup</h2>

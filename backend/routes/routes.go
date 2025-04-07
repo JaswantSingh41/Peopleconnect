@@ -13,6 +13,8 @@ func RegisterRoutes(r *gin.Engine) {
 	api.POST("/login", controllers.Login)
 	api.POST("/rooms", controllers.CreateRoom)
 	api.GET("/rooms", controllers.GetRooms)
+	r.GET("/ws/:id", controllers.ChatHandler)
+	api.GET("/room/:id/messages", controllers.GetMessages)
 
 	protected := api.Group("/")
 	protected.Use(middleware.AuthMiddleware())

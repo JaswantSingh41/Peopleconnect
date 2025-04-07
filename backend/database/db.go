@@ -30,5 +30,5 @@ func Connect() {
 
 	fmt.Print("Connect to PostgreSQL")
 
-	DB.AutoMigrate(&models.Room{}, &models.User{})
+	DB.AutoMigrate(&models.Room{}, &models.User{}, &models.Message{})
 }

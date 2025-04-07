@@ -27,6 +27,7 @@ function Dashboard() {
         <>
             <header className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">People-connect Rooms</h2>
+            
                 <div className="space-x-2">
                     {!token ? (
                         <>

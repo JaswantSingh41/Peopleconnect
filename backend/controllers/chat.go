@@ -3,14 +3,18 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/JaswantSingh41/Peopleconnect/database"
 	"github.com/JaswantSingh41/Peopleconnect/models"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
+
+var roomParticipants = make(map[string]map[*websocket.Conn]string)
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -31,6 +35,39 @@ func ChatHandler(c *gin.Context) {
 
 	defer conn.Close()
 
+	token := c.Query("token")
+
+	parsed, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+	if err != nil || !parsed.Valid {
+		conn.WriteMessage(websocket.TextMessage, []byte("unauthorized"))
+		conn.Close()
+		return
+	}
+	claims := parsed.Claims.(jwt.MapClaims)
+	email := claims["email"].(string)
+
+	var room models.Room
+	if err := database.DB.First(&room, "id = ?", roomID).Error; err != nil {
+		conn.WriteMessage(websocket.TextMessage, []byte("Room not found"))
+		conn.Close()
+		return
+	}
+
+	// Check if room is full
+	if len(roomParticipants[roomID]) >= room.MaxParticipants {
+		conn.WriteMessage(websocket.TextMessage, []byte("Room is full"))
+		conn.Close()
+		return
+	}
+
+	if roomParticipants[roomID] == nil {
+		roomParticipants[roomID] = make(map[*websocket.Conn]string)
+	}
+	roomParticipants[roomID][conn] = email
+	broadcastParticipants(roomID)
+
 	clients[conn] = roomID
 
 	for {
@@ -38,6 +75,8 @@ func ChatHandler(c *gin.Context) {
 		if err != nil {
 			fmt.Println("Read error: ", err)
 			delete(clients, conn)
+			delete(roomParticipants[roomID], conn)
+			broadcastParticipants(roomID)
 			break
 		}
 
@@ -81,4 +120,16 @@ func GetMessages(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, messages)
+}
+
+func broadcastParticipants(roomID string) {
+	usernames := []string{}
+	for _, email := range roomParticipants[roomID] {
+		usernames = append(usernames, email)
+	}
+	joined := "PARTICIPANTS:" + strings.Join(usernames, ",")
+
+	for conn := range roomParticipants[roomID] {
+		conn.WriteMessage(websocket.TextMessage, []byte(joined))
+	}
 }

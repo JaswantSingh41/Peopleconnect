@@ -29,11 +29,14 @@ function Room() {
   const navigate = useNavigate()
   const [room, setRoom] = useState<Room | null>(null)
   const [error, setError] = useState('')
+  const [participants, setParticipants] = useState<string[]>([])
+
+  const [kickedOut, setKickedOut] = useState(false)
 
   const [messages, setMessages] = useState<string[]>([])
   const [message, setMessage] = useState('')
   const socketRef = useRef<WebSocket | null>(null)
-
+  const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   const token = localStorage.getItem('token')
   let userEmail = ''
@@ -80,11 +83,24 @@ function Room() {
       })
 
     // Connect WebSocket
-    const ws = new WebSocket(`ws://localhost:8080/ws/${id}`)
+    const ws = new WebSocket(`ws://localhost:8080/ws/${id}?token=${token}`)
     socketRef.current = ws
 
     ws.onmessage = (event) => {
-      setMessages((prev) => [...prev, event.data])
+      const data = event.data as string
+      if (data === "Room is full") {
+        alert("This room is full. You cannot join.")
+        setKickedOut(true)
+        ws.close()
+        return
+      }
+      
+      if (data.startsWith("PARTICIPANTS:")) {
+        const userList = data.replace("PARTICIPANTS:", "").split(",")
+        setParticipants(userList)
+      } else {
+        setMessages((prev) => [...prev, data])
+      }
     }
 
     ws.onclose = () => {
@@ -97,6 +113,10 @@ function Room() {
 
   }, [id, navigate])
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
   const sendMessage = () => {
     if (socketRef.current && message.trim() !== '') {
       const formatted = `${userEmail}: ${message}`
@@ -108,6 +128,14 @@ function Room() {
   if (error) return <div className="p-6 text-red-500">{error}</div>
   if (!room) return <div className="p-6">Loading...</div>
 
+  if (kickedOut) {
+    return (
+      <div className="p-6 text-red-600">
+        ❌  this room room is  full . <br />
+        <a href="/" className="text-blue-500 underline">Go back to homepage</a>
+      </div>
+    )
+  }
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-2">Welcome to: {room.topic}</h2>
@@ -116,10 +144,43 @@ function Room() {
 
 
       <div className="border p-4 mb-4 h-60 overflow-y-scroll bg-white rounded shadow">
-        {messages.map((msg, index) => (
-          <div key={index} className="mb-2">{msg}</div>
-        ))}
+        {messages.map((msg, index) => {
+          const isMine = msg.startsWith(userEmail)
+          const [sender, content] = msg.split(': ', 2)
+
+          return (
+            <div
+              key={index}
+              className={`flex ${isMine ? 'justify-end' : 'justify-start'} mb-2`}
+            >
+              <div
+                className={`max-w-[70%] px-4 py-2 rounded-lg shadow 
+                ${isMine ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}
+              >
+                {!isMine && (
+                  <p className="text-xs font-semibold text-gray-600 mb-1">{sender}</p>
+                )}
+                <p>{content}</p>
+              </div>
+            </div>
+          )
+        })}
+        <div ref={messagesEndRef} />
       </div>
+      <div className="mb-4">
+  <h3 className="font-semibold mb-1 text-gray-600">Participants:</h3>
+  <div className="flex flex-wrap gap-2">
+    {participants.map((user, index) => (
+      <span
+        key={index}
+        className="bg-gray-100 text-sm text-gray-800 px-2 py-1 rounded"
+      >
+        {user === userEmail ? "You" : user}
+      </span>
+    ))}
+  </div>
+</div>
+
 
       <div className="flex gap-2">
         <input
